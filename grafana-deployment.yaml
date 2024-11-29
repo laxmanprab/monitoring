@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:8.3.0
+        env:
+          - name: GF_SECURITY_ADMIN_PASSWORD
+            value: "admin"
+        ports:
+          - containerPort: 3000
+        volumeMounts:
+          - name: grafana-storage
+            mountPath: /var/lib/grafana
+          # Mount the ConfigMap containing the custom grafana.ini
+          - name: grafana-config
+            mountPath: /etc/grafana/grafana.ini
+            subPath: grafana.ini  # Mount the file at the correct path
+      volumes:
+        - name: grafana-storage
+          emptyDir: {}
+        # Define the volume that uses the ConfigMap
+        - name: grafana-config
+          configMap:
+            name: grafana-config  # Name of the ConfigMap you created
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  ports:
+    - port: 3000
+  selector:
+    app: grafana
